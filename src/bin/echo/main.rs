@@ -1,6 +1,6 @@
 use std::io;
 
-use distrust::{Init, InitOk, Message};
+use distrust::{Body, Init, InitOk, Message};
 use echo::{Echo, EchoOk};
 mod echo;
 
@@ -10,12 +10,14 @@ fn main() {
     stdin.read_line(&mut buffer).expect("read from stdin");
     let msg: Message<Init> = serde_json::from_str(&buffer).expect("parse message");
 
-    let id = msg.body.node_id;
+    let id = msg.body.payload.node_id;
     let reply: Message<InitOk> = Message {
         src: msg.dest,
         dest: msg.src,
-        body: InitOk {
-            in_reply_to: msg.body.msg_id,
+        body: Body {
+            msg_id: 1,
+            in_reply_to: Some(msg.body.msg_id),
+            payload: InitOk {},
         },
     };
 
@@ -28,10 +30,12 @@ fn main() {
         let reply: Message<EchoOk> = Message {
             src: echo.dest,
             dest: echo.src,
-            body: EchoOk {
+            body: Body {
                 msg_id: echo.body.msg_id,
-                in_reply_to: echo.body.msg_id,
-                echo: echo.body.echo,
+                in_reply_to: Some(echo.body.msg_id),
+                payload: EchoOk {
+                    echo: echo.body.payload.echo,
+                },
             },
         };
         println!("{}", serde_json::to_string(&reply).expect("serialization"));

@@ -4,7 +4,15 @@ use serde::{Deserialize, Serialize};
 pub struct Message<P: Payload> {
     pub src: String,
     pub dest: String,
-    pub body: P,
+    pub body: Body<P>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Body<P: Payload> {
+    pub msg_id: u64,
+    pub in_reply_to: Option<u64>,
+    #[serde(flatten)]
+    pub payload: P,
 }
 
 pub trait Payload {}
@@ -12,7 +20,6 @@ pub trait Payload {}
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
 pub struct Init {
-    pub msg_id: u64,
     pub node_id: String,
     pub node_ids: Vec<String>,
 }
@@ -20,9 +27,7 @@ pub struct Init {
 #[derive(Serialize)]
 #[serde(tag = "type")]
 #[serde(rename = "init_ok")]
-pub struct InitOk {
-    pub in_reply_to: u64,
-}
+pub struct InitOk {}
 
 impl Payload for Init {}
 impl Payload for InitOk {}
@@ -36,7 +41,11 @@ mod test {
         let reply_ok: Message<InitOk> = Message {
             src: "n1".to_owned(),
             dest: "c1".to_owned(),
-            body: InitOk { in_reply_to: 1 },
+            body: Body {
+                msg_id: 1,
+                in_reply_to: Some(1),
+                payload: InitOk {},
+            },
         };
 
         let ser = serde_json::to_string(&reply_ok).unwrap();
