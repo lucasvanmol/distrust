@@ -1,3 +1,5 @@
+use std::io::{self, Stdin};
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,6 +33,27 @@ pub struct InitOk {}
 
 impl Payload for Init {}
 impl Payload for InitOk {}
+
+pub fn init() -> Init {
+    let stdin = io::stdin();
+    let mut buffer = String::new();
+    stdin.read_line(&mut buffer).expect("read from stdin");
+    let msg: Message<Init> = serde_json::from_str(&buffer).expect("parse message");
+
+    let reply: Message<InitOk> = Message {
+        src: msg.dest,
+        dest: msg.src,
+        body: Body {
+            msg_id: 1,
+            in_reply_to: Some(msg.body.msg_id),
+            payload: InitOk {},
+        },
+    };
+
+    println!("{}", serde_json::to_string(&reply).expect("serialization"));
+
+    return msg.body.payload;
+}
 
 #[cfg(test)]
 mod test {
