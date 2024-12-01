@@ -33,3 +33,9 @@ docker exec -it maelstrom maelstrom test -w echo --bin ./bin/echo --node-count 1
 ```
 docker exec -it maelstrom maelstrom test -w unique-ids --bin ./bin/uid --time-limit 30 --rate 1000 --node-count 3 --availability total --nemesis partition
 ```
+
+### gossip
+
+```
+docker exec -it maelstrom maelstrom test -w broadcast --bin ./bin/broadcast --node-count 1 --time-limit 20 --rate 10
+```

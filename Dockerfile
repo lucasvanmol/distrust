@@ -1,11 +1,21 @@
-# Use an official OpenJDK runtime as the base image
-FROM rust:1.67 AS builder
-
+# Use cargo-chef to cache Docker layers on prereqs
+FROM rust:1.74 AS chef
 WORKDIR /distrust
+RUN cargo install --version 0.1.68 cargo-chef --locked
+
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS builder
+COPY --from=planner /distrust/recipe.json recipe.json
+# Build dependencies (cached)
+RUN cargo chef cook --release --recipe-path recipe.json
+# Build application
 COPY . .
 RUN cargo build --release
 
-FROM openjdk:11-jdk-slim
+FROM openjdk:24-slim
 
 # Set environment variables
 ENV MAELSTROM_VERSION=0.2.3
@@ -13,6 +23,7 @@ ENV MAELSTROM_DIR=/opt/maelstrom
 
 # Install dependencies: curl for downloading files, Graphviz, and gnuplot
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # RUN apk add --no-cache \
     graphviz \
     gnuplot \
     bzip2 \
